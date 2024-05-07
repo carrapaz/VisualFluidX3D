@@ -30,12 +30,14 @@ def git_clone_repository():
         print("Failed to clone repository: " + str(e))
 
 def find_msbuild():
+    # Path to vswhere.exe - adjust if necessary
     vswhere_path = r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+    # Use vswhere to find the installation path for MSBuild
     try:
         result = subprocess.run([vswhere_path, "-latest", "-requires", "Microsoft.Component.MSBuild", "-find", "MSBuild\\**\\Bin\\MSBuild.exe", "-format", "json"], capture_output=True, text=True, check=True)
         installations = json.loads(result.stdout)
         if installations:
-            return installations[0]
+            return installations[0]  # Returns the path to the latest MSBuild executable
     except subprocess.CalledProcessError as e:
         print(f"Error finding MSBuild with vswhere: {e}")
     return None
@@ -54,7 +56,8 @@ def compile_solution(msbuild_path, solution_path):
         print(f"An error occurred: {e}")
 
 def run_application():
-    executable_path = os.path.join(os.getcwd(), "FluidX3D", "bin", "FluidX3D.exe")
+    executable_path = os.path.join(os.getcwd(), "FluidX3D", "bin", "FluidX3D")
+    # Command to open a new console window
     command = f'start cmd /K "{executable_path}"'
     try:
         subprocess.run(command, shell=True)
@@ -62,10 +65,16 @@ def run_application():
         print(f"Failed to run the application: {e}")
 
 def compile_and_play_simulation():
+    
     msbuild_path = find_msbuild()
+    print("found msbuild")
+    
     solution_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', "FluidX3D.sln")
+    print("solution path: ",solution_path)
+    
     compile_solution(msbuild_path, solution_path)
     run_application()
+
 
 class VISUALFLUIDX3D_OT_CloneRepo(bpy.types.Operator):
     """Clone FluidX3D Repository"""
