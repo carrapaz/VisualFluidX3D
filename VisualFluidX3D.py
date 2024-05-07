@@ -1,72 +1,65 @@
+import bpy
+import subprocess
+import os
+import json
+
 bl_info = {
     "name": "VisualFluidX3D",
     "author": "Davide Vigano",
     "version": (0, 1),
     "blender": (4, 1, 0),
     "location": "Preferences > Add-ons",
-    "description": "Clones and compiles the FluidX3D addon from GitHub into the addon directory.",
+    "description": "Clones, compiles, and runs the FluidX3D addon from GitHub.",
     "warning": "",
     "doc_url": "",
     "category": "System",
 }
 
-import bpy
-import subprocess
-import os
-
-def git_clone_repository():
-    # Repository URL
-    repo_url = "https://github.com/ProjectPhysX/FluidX3D.git"
-    
-    # Directory where this script is located
-    addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
-    
-    # Command to clone the repository
-    cmd = ["git", "clone", repo_url, addon_dir]
-    
-    # Execute the git command
+def find_msbuild():
+    vswhere_path = r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
     try:
-        subprocess.run(cmd, check=True)
-        return "FluidX3D cloned successfully into: " + addon_dir
+        result = subprocess.run([vswhere_path, "-latest", "-requires", "Microsoft.Component.MSBuild", "-find", "MSBuild\\**\\Bin\\MSBuild.exe", "-format", "json"], capture_output=True, text=True, check=True)
+        installations = json.loads(result.stdout)
+        if installations:
+            return installations[0]
     except subprocess.CalledProcessError as e:
-        return "Failed to clone repository: " + str(e)
+        print(f"Error finding MSBuild with vswhere: {e}")
+    return None
 
-def compile_solution():
-    # Path where Blender stores addons
-    addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
-    
-    # Full path to the solution file
-    solution_path = os.path.join(addon_dir, "FluidX3D.sln")
-    
-    # Check if the solution file exists
-    if not os.path.exists(solution_path):
-        return "Solution file does not exist at: " + solution_path
-
-    # Compile the solution using Visual Studio's devenv
+def compile_solution(msbuild_path, solution_path):
     try:
-        subprocess.run(["devenv", solution_path, "/Build", "Release"], check=True)
-        return "Solution compiled successfully."
+        result = subprocess.run([msbuild_path, solution_path, "/p:Configuration=Release"], capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            print("Failed to compile the solution:")
+            print(result.stdout)
+            print(result.stderr)
+        else:
+            print("Solution compiled successfully.")
+            print(result.stdout)
     except subprocess.CalledProcessError as e:
-        return f"Failed to compile the solution: {e}"
+        print(f"An error occurred: {e}")
 
-class VISUALFLUIDX3D_OT_clone(bpy.types.Operator):
-    """Clone FluidX3D Repository"""
-    bl_idname = "wm.visual_fluidx3d_clone"
-    bl_label = "Clone FluidX3D"
+def run_application():
+    executable_path = os.path.join(os.getcwd(), "FluidX3D", "bin", "FluidX3D.exe")
+    command = f'start cmd /K "{executable_path}"'
+    try:
+        subprocess.run(command, shell=True)
+    except Exception as e:
+        print(f"Failed to run the application: {e}")
+
+def compile_and_play_simulation():
+    msbuild_path = find_msbuild()
+    solution_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', "FluidX3D.sln")
+    compile_solution(msbuild_path, solution_path)
+    run_application()
+
+class VISUALFLUIDX3D_OT_CompileAndPlay(bpy.types.Operator):
+    """Compile and Run FluidX3D Simulation"""
+    bl_idname = "wm.visual_fluidx3d_compile_and_play"
+    bl_label = "Compile and Run Simulation"
 
     def execute(self, context):
-        message = git_clone_repository()
-        self.report({'INFO'}, message)
-        return {'FINISHED'}
-
-class VISUALFLUIDX3D_OT_compile(bpy.types.Operator):
-    """Compile FluidX3D Solution"""
-    bl_idname = "wm.visual_fluidx3d_compile"
-    bl_label = "Compile FluidX3D"
-
-    def execute(self, context):
-        message = compile_solution()
-        self.report({'INFO'}, message)
+        compile_and_play_simulation()
         return {'FINISHED'}
 
 class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
@@ -74,18 +67,14 @@ class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Clone and Compile FluidX3D repository.")
-        layout.operator(VISUALFLUIDX3D_OT_clone.bl_idname)
-        layout.operator(VISUALFLUIDX3D_OT_compile.bl_idname)
+        layout.operator(VISUALFLUIDX3D_OT_CompileAndPlay.bl_idname)
 
 def register():
-    bpy.utils.register_class(VISUALFLUIDX3D_OT_clone)
-    bpy.utils.register_class(VISUALFLUIDX3D_OT_compile)
+    bpy.utils.register_class(VISUALFLUIDX3D_OT_CompileAndPlay)
     bpy.utils.register_class(VisualFluidX3DPreferences)
 
 def unregister():
-    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_clone)
-    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_compile)
+    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CompileAndPlay)
     bpy.utils.unregister_class(VisualFluidX3DPreferences)
 
 if __name__ == "__main__":
