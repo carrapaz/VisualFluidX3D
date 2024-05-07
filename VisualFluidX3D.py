@@ -17,6 +17,10 @@ bl_info = {
     "category": "System",
 }
 
+
+
+# SET-UP---------------------------------------------------------------------------------------
+
 def git_clone_repository():
     # Repository URL
     repo_url = "https://github.com/ProjectPhysX/FluidX3D.git"
@@ -77,8 +81,7 @@ def compile_and_play_simulation():
     compile_solution(msbuild_path, solution_path)
     print("Solution compiled")
     run_application()
-
-
+    
 class VISUALFLUIDX3D_OT_CloneRepo(bpy.types.Operator):
     """Clone FluidX3D Repository"""
     bl_idname = "wm.visual_fluidx3d_clone_repo"
@@ -96,19 +99,15 @@ class VISUALFLUIDX3D_OT_CompileAndPlay(bpy.types.Operator):
     def execute(self, context):
         compile_and_play_simulation()
         return {'FINISHED'}
+# ---------------------------------------------------------------------------------------------
 
-class VISUALFLUIDX3D_MT_CompileAndPlay(bpy.types.Operator):
-    """Compile and Run FluidX3D Simulation"""
-    bl_idname = "wm.visual_fluidx3d_compile_and_play"
-    bl_label = "Compile and Run Simulation"
 
-    def execute(self, context):
-        compile_and_play_simulation()
-        return {'FINISHED'}
+# UI PANNEL ----------------------------------------------------------------------------------- 
 
 def is_repository_cloned(addon_dir):
     # Check if the directory exists and contains any files or subdirectories
     return os.path.exists(addon_dir) and any(os.listdir(addon_dir))
+
 
 class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
@@ -122,28 +121,59 @@ class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
             
         layout.operator(VISUALFLUIDX3D_OT_CompileAndPlay.bl_idname)
 
+
+
 class FLUIDX3D_PT_main_panel(bpy.types.Panel):
-    bl_label = "Simuluation"
+    bl_label = "FluidX3D"
     bl_idname = "FLUIDX3D_PT_main_panel"
     bl_space_type = 'VIEW_3D'   # The space where the panel is located
     bl_region_type = 'UI'       # The region of the space (UI for the sidebar)
     bl_category = 'FluidX3D'    # The name of the tab where the panel will be located
+    bl_order = 0
 
     def draw(self, context):
         layout = self.layout
         addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
 
         if not is_repository_cloned(addon_dir):
-            layout.operator("wm.visual_fluidx3d_clone_repo", text="Clone FluidX3D Repository")
-        layout.operator("wm.visual_fluidx3d_compile_and_play", text="Compile and Run Simulation")
+            layout.operator("wm.visual_fluidx3d_clone_repo", text="Clone FluidX3D Repository", icon="DUPLICATE")
+        layout.operator("wm.visual_fluidx3d_compile_and_play", text="Compile and Run", icon="PLAY")
+ 
+ 
+
+class FLUIDX3D_PT_settings_subpanel(bpy.types.Panel):
+    bl_label = "Settings"
+    bl_idname = "FLUIDX3D_PT_settings_subpanel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'FluidX3D'
+    bl_parent_id = "FLUIDX3D_PT_main_panel"  
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 1
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Adjust your settings here:")
+        # Add any settings properties here, e.g.,
+        # layout.prop(context.scene, "your_custom_property")        
+                
+                
         
-        # Add a separator and a label for the settings section
-        layout.separator()
-        layout.label(text="Settings")
+class FLUIDX3D_PT_docs_subpanel(bpy.types.Panel):
+    bl_label = "Help"
+    bl_idname = "FLUIDX3D_PT_docs_subpanel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'FluidX3D'
+    bl_parent_id = "FLUIDX3D_PT_main_panel"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 2
+
+    def draw(self, context):
+        layout = self.layout
+        # Button for opening documentation
+        layout.operator("wm.url_open", text="Documentation", icon="HELP").url = "https://github.com/ProjectPhysX/FluidX3D/blob/master/DOCUMENTATION.md"
         
-        # Add a separator and a label for the documentation section
-        layout.separator()
-        layout.label(text="Documentation")
         
 
 def register():
@@ -151,12 +181,16 @@ def register():
     bpy.utils.register_class(VISUALFLUIDX3D_OT_CompileAndPlay)
     bpy.utils.register_class(VisualFluidX3DPreferences)
     bpy.utils.register_class(FLUIDX3D_PT_main_panel)
+    bpy.utils.register_class(FLUIDX3D_PT_settings_subpanel)
+    bpy.utils.register_class(FLUIDX3D_PT_docs_subpanel)
 
 def unregister():
     bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CloneRepo)
     bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CompileAndPlay)
     bpy.utils.unregister_class(VisualFluidX3DPreferences)
     bpy.utils.unregister_class(FLUIDX3D_PT_main_panel)
+    bpy.utils.unregister_class(FLUIDX3D_PT_settings_subpanel)
+    bpy.utils.unregister_class(FLUIDX3D_PT_docs_subpanel)
 
 if __name__ == "__main__":
     register()
