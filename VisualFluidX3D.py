@@ -83,6 +83,7 @@ def compile_solution(msbuild_path, solution_path):
 
 
 def run_application():
+    
     executable_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', 'bin', 'FluidX3D.exe')
     # Command to open a new console window
     command = f'start cmd /K "{executable_path}"'
