@@ -1,11 +1,13 @@
-import bpy
+import webbrowser
 import subprocess
-import os
 import json
+import bpy
+import os
+
 
 bl_info = {
     "name": "VisualFluidX3D",
-    "author": "Davide Vigano",
+    "author": "Davide Viganò",
     "version": (0, 1),
     "blender": (4, 1, 0),
     "location": "Preferences > Add-ons",
@@ -95,23 +97,66 @@ class VISUALFLUIDX3D_OT_CompileAndPlay(bpy.types.Operator):
         compile_and_play_simulation()
         return {'FINISHED'}
 
+class VISUALFLUIDX3D_MT_CompileAndPlay(bpy.types.Operator):
+    """Compile and Run FluidX3D Simulation"""
+    bl_idname = "wm.visual_fluidx3d_compile_and_play"
+    bl_label = "Compile and Run Simulation"
+
+    def execute(self, context):
+        compile_and_play_simulation()
+        return {'FINISHED'}
+
+def is_repository_cloned(addon_dir):
+    # Check if the directory exists and contains any files or subdirectories
+    return os.path.exists(addon_dir) and any(os.listdir(addon_dir))
+
 class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
 
     def draw(self, context):
         layout = self.layout
-        layout.operator(VISUALFLUIDX3D_OT_CloneRepo.bl_idname)
+        addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
+
+        if not is_repository_cloned(addon_dir):
+            layout.operator(VISUALFLUIDX3D_OT_CloneRepo.bl_idname)
+            
         layout.operator(VISUALFLUIDX3D_OT_CompileAndPlay.bl_idname)
+
+class FLUIDX3D_PT_main_panel(bpy.types.Panel):
+    bl_label = "Simuluation"
+    bl_idname = "FLUIDX3D_PT_main_panel"
+    bl_space_type = 'VIEW_3D'   # The space where the panel is located
+    bl_region_type = 'UI'       # The region of the space (UI for the sidebar)
+    bl_category = 'FluidX3D'    # The name of the tab where the panel will be located
+
+    def draw(self, context):
+        layout = self.layout
+        addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
+
+        if not is_repository_cloned(addon_dir):
+            layout.operator("wm.visual_fluidx3d_clone_repo", text="Clone FluidX3D Repository")
+        layout.operator("wm.visual_fluidx3d_compile_and_play", text="Compile and Run Simulation")
+        
+        # Add a separator and a label for the settings section
+        layout.separator()
+        layout.label(text="Settings")
+        
+        # Add a separator and a label for the documentation section
+        layout.separator()
+        layout.label(text="Documentation")
+        
 
 def register():
     bpy.utils.register_class(VISUALFLUIDX3D_OT_CloneRepo)
     bpy.utils.register_class(VISUALFLUIDX3D_OT_CompileAndPlay)
     bpy.utils.register_class(VisualFluidX3DPreferences)
+    bpy.utils.register_class(FLUIDX3D_PT_main_panel)
 
 def unregister():
     bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CloneRepo)
     bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CompileAndPlay)
     bpy.utils.unregister_class(VisualFluidX3DPreferences)
+    bpy.utils.unregister_class(FLUIDX3D_PT_main_panel)
 
 if __name__ == "__main__":
     register()
