@@ -4,7 +4,7 @@ bl_info = {
     "version": (0, 1),
     "blender": (4, 1, 0),
     "location": "Preferences > Add-ons",
-    "description": "Clones the FluidX3D addon from GitHub into the addon directory.",
+    "description": "Clones and compiles the FluidX3D addon from GitHub into the addon directory.",
     "warning": "",
     "doc_url": "",
     "category": "System",
@@ -31,29 +31,50 @@ def git_clone_repository():
     except subprocess.CalledProcessError as e:
         return "Failed to clone repository: " + str(e)
 
-class VISUALFLUIDX3D_OT_clone(bpy.types.Operator):
-    """Clone FluidX3D Repository"""
-    bl_idname = "wm.visual_fluidx3d_clone"
-    bl_label = "Clone FluidX3D"
+def compile_solution():
+    solution_path = os.path.join(os.getcwd(), "FluidX3D", "FluidX3D.sln")
+    print(solution_path)
+    
+    # Check if the solution file exists
+    if not os.path.exists(solution_path):
+        print("Solution file does not exist in the current directory.")
+        return "Solution file does not exist."
+
+    # Compile the solution using Visual Studio's devenv
+    try:
+        subprocess.run(["devenv", solution_path, "/Build", "Release"], check=True)
+        return "Solution compiled successfully."
+    except subprocess.CalledProcessError as e:
+        return f"Failed to compile the solution: {e}"
+
+class VISUALFLUIDX3D_OT_compile(bpy.types.Operator):
+    """Compile FluidX3D Solution"""
+    bl_idname = "wm.visual_fluidx3d_compile"
+    bl_label = "Compile FluidX3D"
 
     def execute(self, context):
-        message = git_clone_repository()
+        message = compile_solution()
         self.report({'INFO'}, message)
         return {'FINISHED'}
 
-def add_clone_button(self, context):
-    self.layout.operator(
-        VISUALFLUIDX3D_OT_clone.bl_idname,
-        text="Clone FluidX3D Repository",
-        icon='PLUGIN')
+class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Clone the FluidX3D repository to your Blender addon directory.")
+        layout.operator(VISUALFLUIDX3D_OT_clone.bl_idname)
+        layout.operator(VISUALFLUIDX3D_OT_compile.bl_idname)
 
 def register():
     bpy.utils.register_class(VISUALFLUIDX3D_OT_clone)
-    bpy.types.VIEW3D_MT_mesh_add.append(add_clone_button)
+    bpy.utils.register_class(VISUALFLUIDX3D_OT_compile)
+    bpy.utils.register_class(VisualFluidX3DPreferences)
 
 def unregister():
     bpy.utils.unregister_class(VISUALFLUIDX3D_OT_clone)
-    bpy.types.VIEW3D_MT_mesh_add.remove(add_clone_button)
+    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_compile)
+    bpy.utils.unregister_class(VisualFluidX3DPreferences)
 
 if __name__ == "__main__":
     register()
