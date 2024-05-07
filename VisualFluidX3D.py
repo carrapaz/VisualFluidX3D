@@ -56,7 +56,7 @@ def compile_solution(msbuild_path, solution_path):
         print(f"An error occurred: {e}")
 
 def run_application():
-    executable_path = os.path.join(os.getcwd(), "FluidX3D", "bin", "FluidX3D")
+    executable_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', 'bin', 'FluidX3D.exe')
     # Command to open a new console window
     command = f'start cmd /K "{executable_path}"'
     try:
@@ -69,10 +69,11 @@ def compile_and_play_simulation():
     msbuild_path = find_msbuild()
     print("found msbuild")
     
-    solution_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', "FluidX3D.sln")
+    solution_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', 'FluidX3D.sln')
     print("solution path: ",solution_path)
     
     compile_solution(msbuild_path, solution_path)
+    print("Solution compiled")
     run_application()
 
 
