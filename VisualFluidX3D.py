@@ -35,6 +35,8 @@ def git_clone_repository():
     except subprocess.CalledProcessError as e:
         print("Failed to clone repository: " + str(e))
 
+
+
 def find_msbuild():
     # Path to vswhere.exe - adjust if necessary
     vswhere_path = r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -47,6 +49,23 @@ def find_msbuild():
     except subprocess.CalledProcessError as e:
         print(f"Error finding MSBuild with vswhere: {e}")
     return None
+
+
+
+class VISUALFLUIDX3D_OT_CloneRepo(bpy.types.Operator):
+    """Clone FluidX3D Repository"""
+    bl_idname = "wm.visual_fluidx3d_clone_repo"
+    bl_label = "Clone FluidX3D Repository"
+
+    def execute(self, context):
+        git_clone_repository()
+        return {'FINISHED'}
+    
+# ---------------------------------------------------------------------------------------------
+
+
+
+# COMPILE AND RUN -----------------------------------------------------------------------------
 
 def compile_solution(msbuild_path, solution_path):
     try:
@@ -61,6 +80,8 @@ def compile_solution(msbuild_path, solution_path):
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
 
+
+
 def run_application():
     executable_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', 'bin', 'FluidX3D.exe')
     # Command to open a new console window
@@ -69,6 +90,8 @@ def run_application():
         subprocess.run(command, shell=True)
     except Exception as e:
         print(f"Failed to run the application: {e}")
+
+
 
 def compile_and_play_simulation():
     
@@ -82,14 +105,7 @@ def compile_and_play_simulation():
     print("Solution compiled")
     run_application()
     
-class VISUALFLUIDX3D_OT_CloneRepo(bpy.types.Operator):
-    """Clone FluidX3D Repository"""
-    bl_idname = "wm.visual_fluidx3d_clone_repo"
-    bl_label = "Clone FluidX3D Repository"
 
-    def execute(self, context):
-        git_clone_repository()
-        return {'FINISHED'}
 
 class VISUALFLUIDX3D_OT_CompileAndPlay(bpy.types.Operator):
     """Compile and Run FluidX3D Simulation"""
@@ -99,7 +115,9 @@ class VISUALFLUIDX3D_OT_CompileAndPlay(bpy.types.Operator):
     def execute(self, context):
         compile_and_play_simulation()
         return {'FINISHED'}
+    
 # ---------------------------------------------------------------------------------------------
+
 
 
 # UI PANNEL ----------------------------------------------------------------------------------- 
@@ -107,6 +125,7 @@ class VISUALFLUIDX3D_OT_CompileAndPlay(bpy.types.Operator):
 def is_repository_cloned(addon_dir):
     # Check if the directory exists and contains any files or subdirectories
     return os.path.exists(addon_dir) and any(os.listdir(addon_dir))
+
 
 
 class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
@@ -140,7 +159,7 @@ class FLUIDX3D_PT_main_panel(bpy.types.Panel):
         layout.operator("wm.visual_fluidx3d_compile_and_play", text="Compile and Run", icon="PLAY")
  
  
-
+ 
 class FLUIDX3D_PT_settings_subpanel(bpy.types.Panel):
     bl_label = "Settings"
     bl_idname = "FLUIDX3D_PT_settings_subpanel"
@@ -158,7 +177,7 @@ class FLUIDX3D_PT_settings_subpanel(bpy.types.Panel):
         # layout.prop(context.scene, "your_custom_property")        
                 
                 
-        
+                
 class FLUIDX3D_PT_docs_subpanel(bpy.types.Panel):
     bl_label = "Help"
     bl_idname = "FLUIDX3D_PT_docs_subpanel"
@@ -173,8 +192,12 @@ class FLUIDX3D_PT_docs_subpanel(bpy.types.Panel):
         layout = self.layout
         # Button for opening documentation
         layout.operator("wm.url_open", text="Documentation", icon="HELP").url = "https://github.com/ProjectPhysX/FluidX3D/blob/master/DOCUMENTATION.md"
+
+# ---------------------------------------------------------------------------------------------        
         
         
+        
+# REGISTER UNREGISTER -------------------------------------------------------------------------
 
 def register():
     bpy.utils.register_class(VISUALFLUIDX3D_OT_CloneRepo)
@@ -185,12 +208,16 @@ def register():
     bpy.utils.register_class(FLUIDX3D_PT_docs_subpanel)
 
 def unregister():
-    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CloneRepo)
-    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CompileAndPlay)
-    bpy.utils.unregister_class(VisualFluidX3DPreferences)
-    bpy.utils.unregister_class(FLUIDX3D_PT_main_panel)
-    bpy.utils.unregister_class(FLUIDX3D_PT_settings_subpanel)
     bpy.utils.unregister_class(FLUIDX3D_PT_docs_subpanel)
+    bpy.utils.unregister_class(FLUIDX3D_PT_settings_subpanel)
+    bpy.utils.unregister_class(FLUIDX3D_PT_main_panel)
+    bpy.utils.unregister_class(VisualFluidX3DPreferences)
+    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CompileAndPlay)
+    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CloneRepo)
+    
+# ---------------------------------------------------------------------------------------------
+
+
 
 if __name__ == "__main__":
     register()
