@@ -19,10 +19,10 @@ def git_clone_repository():
     repo_url = "https://github.com/ProjectPhysX/FluidX3D.git"
     
     # Directory where this script is located
-    addon_dir = os.path.dirname(__file__)
+    addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
     
     # Command to clone the repository
-    cmd = ["git", "clone", repo_url, os.path.join(addon_dir, "FluidX3D")]
+    cmd = ["git", "clone", repo_url, addon_dir]
     
     # Execute the git command
     try:
@@ -32,13 +32,15 @@ def git_clone_repository():
         return "Failed to clone repository: " + str(e)
 
 def compile_solution():
-    solution_path = os.path.join(os.getcwd(), "FluidX3D", "FluidX3D.sln")
-    print(solution_path)
+    # Path where Blender stores addons
+    addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
+    
+    # Full path to the solution file
+    solution_path = os.path.join(addon_dir, "FluidX3D.sln")
     
     # Check if the solution file exists
     if not os.path.exists(solution_path):
-        print("Solution file does not exist in the current directory.")
-        return "Solution file does not exist."
+        return "Solution file does not exist at: " + solution_path
 
     # Compile the solution using Visual Studio's devenv
     try:
@@ -46,6 +48,16 @@ def compile_solution():
         return "Solution compiled successfully."
     except subprocess.CalledProcessError as e:
         return f"Failed to compile the solution: {e}"
+
+class VISUALFLUIDX3D_OT_clone(bpy.types.Operator):
+    """Clone FluidX3D Repository"""
+    bl_idname = "wm.visual_fluidx3d_clone"
+    bl_label = "Clone FluidX3D"
+
+    def execute(self, context):
+        message = git_clone_repository()
+        self.report({'INFO'}, message)
+        return {'FINISHED'}
 
 class VISUALFLUIDX3D_OT_compile(bpy.types.Operator):
     """Compile FluidX3D Solution"""
@@ -62,7 +74,7 @@ class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Clone the FluidX3D repository to your Blender addon directory.")
+        layout.label(text="Clone and Compile FluidX3D repository.")
         layout.operator(VISUALFLUIDX3D_OT_clone.bl_idname)
         layout.operator(VISUALFLUIDX3D_OT_compile.bl_idname)
 
