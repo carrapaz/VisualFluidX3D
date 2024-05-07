@@ -15,6 +15,20 @@ bl_info = {
     "category": "System",
 }
 
+def git_clone_repository():
+    # Repository URL
+    repo_url = "https://github.com/ProjectPhysX/FluidX3D.git"
+    # Directory where this script is located
+    addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
+    # Command to clone the repository
+    cmd = ["git", "clone", repo_url, addon_dir]
+    # Execute the git command
+    try:
+        subprocess.run(cmd, check=True)
+        print("FluidX3D cloned successfully into: " + addon_dir)
+    except subprocess.CalledProcessError as e:
+        print("Failed to clone repository: " + str(e))
+
 def find_msbuild():
     vswhere_path = r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
     try:
@@ -53,6 +67,15 @@ def compile_and_play_simulation():
     compile_solution(msbuild_path, solution_path)
     run_application()
 
+class VISUALFLUIDX3D_OT_CloneRepo(bpy.types.Operator):
+    """Clone FluidX3D Repository"""
+    bl_idname = "wm.visual_fluidx3d_clone_repo"
+    bl_label = "Clone FluidX3D Repository"
+
+    def execute(self, context):
+        git_clone_repository()
+        return {'FINISHED'}
+
 class VISUALFLUIDX3D_OT_CompileAndPlay(bpy.types.Operator):
     """Compile and Run FluidX3D Simulation"""
     bl_idname = "wm.visual_fluidx3d_compile_and_play"
@@ -67,13 +90,16 @@ class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
+        layout.operator(VISUALFLUIDX3D_OT_CloneRepo.bl_idname)
         layout.operator(VISUALFLUIDX3D_OT_CompileAndPlay.bl_idname)
 
 def register():
+    bpy.utils.register_class(VISUALFLUIDX3D_OT_CloneRepo)
     bpy.utils.register_class(VISUALFLUIDX3D_OT_CompileAndPlay)
     bpy.utils.register_class(VisualFluidX3DPreferences)
 
 def unregister():
+    bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CloneRepo)
     bpy.utils.unregister_class(VISUALFLUIDX3D_OT_CompileAndPlay)
     bpy.utils.unregister_class(VisualFluidX3DPreferences)
 
