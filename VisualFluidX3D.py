@@ -4,6 +4,8 @@ import json
 import bpy
 import os
 
+from bpy.props import BoolProperty, PointerProperty
+
 
 bl_info = {
     "name": "VisualFluidX3D",
@@ -21,11 +23,19 @@ bl_info = {
 
 # SET-UP---------------------------------------------------------------------------------------
 
+def get_addon_dir():
+    # Construct the path dynamically using Blender's version
+    version_folder = f"{bpy.app.version[0]}.{bpy.app.version[1]}"
+    addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', version_folder, 'scripts', 'addons', 'FluidX3D')
+    return addon_dir
+
+
+
 def git_clone_repository():
     # Repository URL
     repo_url = "https://github.com/ProjectPhysX/FluidX3D.git"
     # Directory where this script is located
-    addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
+    addon_dir = get_addon_dir()
     # Command to clone the repository
     cmd = ["git", "clone", repo_url, addon_dir]
     # Execute the git command
@@ -56,6 +66,7 @@ class VISUALFLUIDX3D_OT_CloneRepo(bpy.types.Operator):
     """Clone FluidX3D Repository"""
     bl_idname = "wm.visual_fluidx3d_clone_repo"
     bl_label = "Clone FluidX3D Repository"
+    bl_description = "Clones the latest version of the FluidX3D repository to the addon directory"
 
     def execute(self, context):
         git_clone_repository()
@@ -84,7 +95,7 @@ def compile_solution(msbuild_path, solution_path):
 
 def run_application():
     
-    executable_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', 'bin', 'FluidX3D.exe')
+    executable_path = os.path.join(get_addon_dir(), 'bin', 'FluidX3D.exe')
     # Command to open a new console window
     command = f'start cmd /K "{executable_path}"'
     try:
@@ -99,7 +110,7 @@ def compile_and_play_simulation():
     msbuild_path = find_msbuild()
     print("found msbuild")
     
-    solution_path = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D', 'FluidX3D.sln')
+    solution_path = os.path.join(get_addon_dir(), 'FluidX3D.sln')
     print("solution path: ",solution_path)
     
     compile_solution(msbuild_path, solution_path)
@@ -112,6 +123,7 @@ class VISUALFLUIDX3D_OT_CompileAndPlay(bpy.types.Operator):
     """Compile and Run FluidX3D Simulation"""
     bl_idname = "wm.visual_fluidx3d_compile_and_play"
     bl_label = "Compile and Run Simulation"
+    bl_description = "Starts the FluidX3D simulation with the current settings"
 
     def execute(self, context):
         compile_and_play_simulation()
@@ -134,7 +146,7 @@ class VisualFluidX3DPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
+        addon_dir = get_addon_dir()
 
         if not is_repository_cloned(addon_dir):
             layout.operator(VISUALFLUIDX3D_OT_CloneRepo.bl_idname)
@@ -153,7 +165,7 @@ class FLUIDX3D_PT_main_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        addon_dir = os.path.join(os.environ['APPDATA'], 'Blender Foundation', 'Blender', '4.1', 'scripts', 'addons', 'FluidX3D')
+        addon_dir = get_addon_dir()
 
         if not is_repository_cloned(addon_dir):
             layout.operator("wm.visual_fluidx3d_clone_repo", text="Clone FluidX3D Repository", icon="DUPLICATE")
@@ -161,6 +173,37 @@ class FLUIDX3D_PT_main_panel(bpy.types.Panel):
  
  
  
+class DUMMY_OT_button(bpy.types.Operator):
+    """Handle Velocity Set Selection"""
+    bl_idname = "dummy.button"
+    bl_label = "Set Velocity"
+    
+    number: bpy.props.IntProperty()  # Identify which button is pressed
+
+    def execute(self, context):
+        # Here you would handle the action based on the 'number' property
+        # This example just logs the button number
+        velocity_sets = {
+            1: "D2Q9",
+            2: "D3Q15",
+            3: "D3Q19",
+            4: "D3Q27"
+        }
+        velocity_set = velocity_sets.get(self.number, "Unknown")
+        self.report({'INFO'}, f"{velocity_set} selected")
+        return {'FINISHED'}
+
+
+
+class VelocitySettings(bpy.types.PropertyGroup):
+    # Properties to manage the state of each button
+    is_d2q9_active: bpy.props.BoolProperty(name="D2Q9 Active", default=False)
+    is_d3q15_active: bpy.props.BoolProperty(name="D3Q15 Active", default=False)
+    is_d3q19_active: bpy.props.BoolProperty(name="D3Q19 Active", default=False)
+    is_d3q27_active: bpy.props.BoolProperty(name="D3Q27 Active", default=False)
+    
+    
+    
 class FLUIDX3D_PT_settings_subpanel(bpy.types.Panel):
     bl_label = "Settings"
     bl_idname = "FLUIDX3D_PT_settings_subpanel"
@@ -173,9 +216,19 @@ class FLUIDX3D_PT_settings_subpanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Adjust your settings here:")
-        # Add any settings properties here, e.g.,
-        # layout.prop(context.scene, "your_custom_property")        
+        layout.label(text="Velocity set:",icon="OUTLINER_OB_FORCE_FIELD")
+        
+        # Velocity sets
+        grid = layout.grid_flow(row_major=True, columns=2, even_columns=True, even_rows=False, align=True)
+        
+        grid.operator("dummy.button", text="D2Q9", icon="MATPLANE").number = 1
+        grid.operator("dummy.button", text="D3Q15", icon="CUBE").number = 2
+        grid.operator("dummy.button", text="D3Q19", icon="CUBE").number = 3
+        grid.operator("dummy.button", text="D3Q27", icon="CUBE").number = 4
+        
+        layout.label(text="Relaxation:")
+
+             
                 
                 
                 
@@ -207,8 +260,10 @@ def register():
     bpy.utils.register_class(FLUIDX3D_PT_main_panel)
     bpy.utils.register_class(FLUIDX3D_PT_settings_subpanel)
     bpy.utils.register_class(FLUIDX3D_PT_docs_subpanel)
+    bpy.utils.register_class(DUMMY_OT_button)
 
 def unregister():
+    bpy.utils.register_class(DUMMY_OT_button)
     bpy.utils.unregister_class(FLUIDX3D_PT_docs_subpanel)
     bpy.utils.unregister_class(FLUIDX3D_PT_settings_subpanel)
     bpy.utils.unregister_class(FLUIDX3D_PT_main_panel)
